@@ -1,4 +1,3 @@
-#revised 2017
 import pygame,math
 from pygame.locals import *
 from math import *
@@ -15,7 +14,9 @@ N,NE,E,SE,S,SW,W,NW,C = 0,1,2,3,4,5,6,7,8
 
 class Mouse(object):
 	def __init__(self):
-		self.x, self.y, self.width, self.height, self.LeftButton, self.RigthButton, self.visible, self.name = 0, 0, 0, 0, None, None, True, "mouse"
+		self.x, self.y, self.visible, self.width, self.height, self.name = 0, 0, True, 0, 0, "mouse"
+		self.LeftClick, self.LeftClickable, self.LeftButton = False, True, None
+		self.RightClick, self.RightClickable, self.RightButton = False, True, None
 
 class KeyBoard(object):
 	def __init__(self):
@@ -82,7 +83,8 @@ class Game(object):
         self.background,self.backgroundXY, self.backgroundXYSet = None, [],False
         self.fps, self.time, self.clock = 20, time + 1, pygame.time.Clock()
         self.left, self.top, self.right, self.bottom = 0,0,w,h
-        self.over, self.score = False,0
+        self.over = False
+        self.score = 0
         self.font = Font()
 
     def clearBackground(self,color=(0,0,0)):
@@ -169,6 +171,8 @@ class Game(object):
         self.fps = fps
         if self.time > 0:
             self.time -= 1/fps
+        mouse.LeftClick = False
+        mouse.RightClick = False
         pygame.display.flip()
         self.clock.tick(fps)
 
@@ -197,6 +201,19 @@ class Game(object):
             button = pygame.mouse.get_pressed()
             mouse.LeftButton = button[0]
             mouse.RightButton = button[2]
+            
+            if mouse.LeftClickable and mouse.LeftButton:
+                    mouse.LeftClick = True
+                    mouse.LeftClickable = False
+            if not mouse.LeftClickable and not mouse.LeftButton:
+                    mouse.LeftClickable = True
+                    
+            if mouse.RightClickable and mouse.RightButton:
+                    mouse.RightClick = True
+                    mouse.RightClickable = False
+            if not mouse.RightClickable and not mouse.RightButton:
+                    mouse.RightClickable = True
+                    
             pygame.mouse.set_visible(mouse.visible)
             if joy.connected:
                     padx,pady = joy.joystick.get_hat(0)
@@ -272,8 +289,8 @@ class Image(object):
             self.oldwidth,self.oldheight = self.width,self.height
         if self.visible:
            self.game.screen.blit(self.image, [self.x - self.width/2,self.y - self.height/2])
-        self.rect = pygame.Rect(self.left,self.top,self.width,self.height)
         self.left, self.top, self.right, self.bottom  = self.x-self.width/2,self.y-self.height/2, self.x + self.width/2, self.y + self.height/2
+        self.rect = pygame.Rect(self.left,self.top,self.width,self.height)
 
     def move(self, bounce = False):
         if bounce:
@@ -437,19 +454,19 @@ class Animation(Image):
             self.f = len(self.images)-1
         self.draw()
     def draw(self, loop = True):
+        Image.setImage(self, self.images[self.f])
+        Image.draw(self)
         if self.visible:
-            Image.setImage(self, self.images[self.f])
-            Image.draw(self)
-            self.ftick += 1
-            if self.ftick % self.frate == 0 and self.playAnim:
-                self.f += 1
-                self.ftick = 0
-            if not loop and self.f == len(self.images)-1:
-                self.visible = False
-                self.f = 0
-            if self.f > len(self.images)-1:
-                self.f = 0
-                self.ftick = 0
+                self.ftick += 1
+                if self.ftick % self.frate == 0 and self.playAnim:
+                        self.f += 1
+                        self.ftick = 0
+                if not loop and self.f == len(self.images)-1:
+                        self.visible = False
+                        self.f = 0
+                if self.f > len(self.images)-1:
+                        self.f = 0
+                        self.ftick = 0
             
     def rotateBy(self,angle=0,direction="right"):
         Image.rotateBy(self,angle,direction)
